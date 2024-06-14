@@ -4,6 +4,10 @@
 #Funciones generales para leer data
 
 #Función que devuelve la ruta hacia la data que se selecciona (csv o imagenes de entrenamiento/prueba)
+#INPUT
+#type_of_data - Tipo de data (archivo) del que quieres obtener la ruta, solo acepta valores "csv", "train_images" y "test_images"
+#OUTPUT
+#data_path - Ruta final (en string) del archivo elejido a leer
 def get_data_path(type_of_data):
 
 	#Variable que regresará la ruta para la data deseada
@@ -26,6 +30,14 @@ def get_data_path(type_of_data):
 
 #Función para crear los histogramas de cada columna del conjunto de datos de prueba (el de entrenamiento contiene 
 #las mismas columnas + las variables a predecir que no nos interesa incluir en este análisis)
+#INPUT
+#df - Data Frame del cual otendremos las columnas a graficar
+#from_column - Número entero que denota el número de inicio del rango de columnas sobre los cuales haremos las gráficas
+#to_column - Número entero que denota el número de fin del rango de columnas sobre los cuales haremos las gráficas
+#num_rows_ax - Número entero que denota el número de renglones que deseas tener en la gráfica final
+#num_cols_ax - Número entero que denota el número de columnas que deseas tener en la gráfica final
+#OUTPUT
+#Gráficas de distribución de todas las columnas dentro del rango elegido
 def plot_hist_columns(df,from_column,to_column,num_rows_ax,num_cols_ax):
 
     #Librerias a utilizar
@@ -59,10 +71,52 @@ def plot_hist_columns(df,from_column,to_column,num_rows_ax,num_cols_ax):
         #Agregamos los títulos a las gráficas
         axes[i].set_title(f'COL_{col_name} dist.') 
         axes[i].set_xlabel(f'COL_{col_name}') 
-        axes[i].set_ylabel('Frequency') 
+        axes[i].set_ylabel('Frecuencia') 
 
     #Ajustamos la gráfica
     plt.tight_layout()
 
     #Mostramos la gráfica final
     plt.show()
+
+#Función para mostrar información acerca de los coeficientes de sesgo de las columnas del conj. de entrenamiento
+#INPUT
+#df - Data Frame del cual obtendremos las columnas sobre las cuales calcular el coeficiente
+#from_column - Número entero que denota el número de inicio del rango de columnas sobre los cuales haremos los cálculos
+#to_column - Número entero que denota el número de fin del rango de columnas sobre los cuales haremos los cálculos
+#OUTPUT
+#Enunciados con resultados importantes de estos coeficientes
+#Gráfica de histograma de los coeficientes de sesgo
+def show_skew_coeff(df,from_column,to_column):
+    #Significado coef. de sesgo
+    # = 0: se parece más a la normal
+    # > 0: sesgada a la izq
+    # < 0: sesgada a la der
+
+    #Importamos las librerías a utilizar
+    from scipy.stats import skew 
+    import matplotlib.pyplot as plt
+
+    #Creamos una lista para ir guardando todos los coeficientes
+    lista_skew = []
+    #Iniciamos el loop donde vamos a ir guardando todos los coeficientes de sesgo para cada columna
+    for column in list(df.columns)[from_column:to_column]:
+        #Calculamos el coeficiente de sesgo para la columna
+        skew_col = skew(df[column], axis = 0, bias = True)
+        #Agregamos el coeficiente calculado a la lista iniciañ
+        lista_skew.append(skew_col)
+
+    #Imprimimos algunos resultados importantes
+    num_col_sesgo1 = len((list(filter(lambda x: x >= 1, lista_skew))))
+    print('En total, hay ' + str(num_col_sesgo1) + ' columnas con coeficiente de sesgo >= 1')
+    num_col_sesgo_1 = len((list(filter(lambda x: x <= -1, lista_skew))))
+    print('En total, hay ' + str(num_col_sesgo_1) + ' columnas con coeficiente de sesgo <= -1')
+    num_col_sesgo_abs_1 = len((list(filter(lambda x: abs(x) < 1, lista_skew))))
+    print('En total, hay ' + str(num_col_sesgo_abs_1) + ' columnas con coeficiente de sesgo cercano a cero')
+
+    #Hacemos la gráfica de distribución de los coeficientes de sesgo
+    plt.hist(lista_skew)
+    plt.title("Coeficientes de sesgo para conj. de entrenamiento")
+    plt.xlabel('Coeficiente de sesgo')
+    plt.ylabel('Frecuencia')
+
