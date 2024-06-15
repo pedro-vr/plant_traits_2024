@@ -120,3 +120,77 @@ def show_skew_coeff(df,from_column,to_column):
     plt.xlabel('Coeficiente de sesgo')
     plt.ylabel('Frecuencia')
 
+#Función para mostrar información acerca de los coeficientes de sesgo de las columnas del conj. de entrenamiento
+#INPUT
+#df - Data Frame del cual otendremos las columnas a graficar
+#from_column - Número entero que denota el número de inicio del rango de columnas sobre los cuales haremos las gráficas
+#to_column - Número entero que denota el número de fin del rango de columnas sobre los cuales haremos las gráficas
+#num_rows_ax - Número entero que denota el número de renglones que deseas tener en la gráfica final
+#num_cols_ax - Número entero que denota el número de columnas que deseas tener en la gráfica final
+#OUTPUT
+#Gráfica de boxplot con los registros de cada columna
+def show_boxplots(df,from_column,to_column,num_rows_ax,num_cols_ax):
+
+    #Importamos las librerias a utilizar
+    import matplotlib.pyplot as plt
+
+    #Creamos el subconjunto de las columnas que queremos graficar en cada paso
+    columnas_rec = list(df.columns)[from_column:to_column]
+
+    #Creamos la plantilla para una gráfica del tamaño requerido
+    fig, axes = plt.subplots(nrows=num_rows_ax, ncols=num_cols_ax, figsize=(27, 15))
+
+    #Aplanamos los ejes para poder iterar sobre ellos más fácil
+    axes = axes.flatten()
+
+    #Hacemos el loop sobre el cual graficaremos
+    for i,column in enumerate(columnas_rec):
+        
+        #Creamos el histograma de la columna correspondiente
+        df.boxplot(column,ax=axes[i], color = 'Blue')
+
+        #Obtenemos el nombre de la columna correspondiente
+        col_name = column[0:15]
+    
+        #Agregamos los títulos a las gráficas
+        axes[i].set_title(f'{col_name} boxplot')
+
+#Función para obtener los registros outliers de cada columna del df
+#INPUT
+#df - Data Frame del cual calcularemos el IQR de sus columnas
+#column - Nombre de la columna del cual calcularemos el IQR
+#OUTPUT
+#df_outliers - Data Frame con los valores outliers de la respectiva columna 
+def get_outliers(df,column):
+
+    #Importamos las librerias necesarias
+    import pandas as pd
+
+    #Obtenemos el percentile 25 de la columna
+    perc_25 = df[column].quantile(.25)
+    #Obtenemos el percentile 75 de la columna
+    perc_75 = df[column].quantile(.75)
+    #Calculamos el IQR de la columna
+    iqr = perc_75 - perc_25
+
+    #Calculamos la cota inferior para el argumento del filtro (siempre es 1.5*iqr)
+    lower_bound = perc_25 - 1.5*iqr
+    #Calculamos la cota superior para el argumento del filtro (siempre es 1.5*iqr)
+    upper_bound = perc_75 + 1.5*iqr
+
+    #Del df solo nos quedamos con aquellos registros outliers de la respectiva columna y lo convertimos en df
+    df_outliers = pd.DataFrame(df[column][(df[column] < lower_bound) | (df[column] > upper_bound)])
+
+    #Hacemos reset del index del nuevo df 
+    df_outliers.reset_index(inplace=True)
+    #Eliminamos la columna que nos generó el reset del index
+    df_outliers.drop(columns=['index'],inplace = True)
+    #Renombramos la columna con los valores outliers
+    df_outliers.rename(columns = {f'{column}':'value'},inplace = True)
+    #Creamos una nueva columna con el nombre de la columna
+    df_outliers['column_name'] = column
+    #Reordenamos las columnas
+    df_outliers = df_outliers[['column_name','value']]
+
+    #Regresamos el df con los outliers
+    return df_outliers
