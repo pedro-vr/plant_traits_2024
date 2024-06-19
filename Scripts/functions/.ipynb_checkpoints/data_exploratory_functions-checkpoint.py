@@ -331,3 +331,74 @@ def summarize_outliers(df,from_column,to_column):
 
     #Regresamos el df del resumen de la cuenta de outliers
     return df_outliers_count
+
+#Función para obtener el primer resultado acerca de la agrupación de datos por variables: CONTEO DE REGISTROS
+#INPUT
+#df - Data Frame de donde analizaremos el nombre de sus columnas
+#OUTPUT
+#list_climate - lista que contiene el nombre de las columnas relacionadas a variables climáticas
+#list_soil - lista que contiene el nombre de las columnas relacionadas a variables del suelo
+#list_sat - lista que contiene el nombre de las columnas relacionadas a variables satelitales
+#list_other - lista que contiene el nombre de las columnas relacionadas a otro tipo de variables
+def get_records_groups_count(df):
+
+    #Lista que contiene el nombre de todas las columnas del df 
+    df_columns = list(df.columns)
+
+    #Listas en donde guardaremos los nombres de las columnas de cada grupo
+    list_climate = list()
+    list_soil = list()
+    list_sat = list()
+    list_other = list()
+
+    #Iniciamos el loop en donde guardaremos cada nombre de columna en su lista correspondiente
+    for column in df_columns:
+
+        #Condición para las columnas de tipo climática
+        if column.upper().startswith('WORLDCLIM_BIO'):
+            #Agregamos el nombre de la columna a la lista correspondiente
+            list_climate.append(column)
+        #Condición para las columnas de tipo de suelo
+        elif column.upper().startswith('SOIL'):
+            #Agregamos el nombre de la columna a la lista correspondiente
+            list_soil.append(column)
+        #Condición para las columnas de tipo satelital
+        elif column.upper().startswith('MODIS') or column.upper().startswith('VOD'):
+            #Agregamos el nombre de la columna a la lista correspondiente
+            list_sat.append(column)
+        #Si no entra en ninguna de las 3 categorias entonces lo mandamos a la lista de otros
+        else:
+            list_other.append(column)
+
+    #Ya que tenemos las listas, imprimimos los resultados deseados
+    print('En total, se tienen ' + str(len(list_climate)) + ' (' + str(round(len(list_climate)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables CLIMÁTICAS')
+    print('En total, se tienen ' + str(len(list_soil)) + ' (' + str(round(len(list_soil)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables DEL SUELO')
+    print('En total, se tienen ' + str(len(list_sat)) + ' (' + str(round(len(list_sat)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables SATELITALES')
+    print('En total, se tienen ' + str(len(list_other)) + ' (' + str(round(len(list_other)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables OTRAS')
+    
+    return list_climate, list_soil, list_sat, list_other
+
+#Función para graficar los histogramas de cada grupo de columnas
+#INPUT
+#df - Data Frame del cual haremos las gráficas de histograma por grupo
+#OUTPUT
+#
+
+#IDEAS DE PLOTS : 
+# GRÁFICAS DE CORRELACIÓN
+# GRAFICAR SUS DESCRIPCIONES (FUNCIÓN DESCRIBE)
+# GRAFICAR LAS VARIABLES VS UNA VARIABLE OBJETIVO (PENSAR BIEN COMO SEPARAR ESTO PORQUE HAY VARIAS VARIABLES OBJETIVO)
+# [https://medium.com/analytics-vidhya/how-to-visualize-pandas-descriptive-statistics-functions-480c3f2ea87c]
+def plot_hist_by_column_group(df):
+
+    #Librerias a importar
+    import functions.data_exploratory_functions as dtef
+    import seaborn as sns
+
+    #Llamamos a la función para obtener las listas de cada grupo
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+
+    #Del df original, creamos la nueva variable para asignar el grupo correspondiente a cada columna
+
+    #Hacemos la gráfica por grupo
+    sns.histplot(x = "x", hue = "group", data = df)
