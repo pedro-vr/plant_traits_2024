@@ -335,12 +335,13 @@ def summarize_outliers(df,from_column,to_column):
 #Función para obtener el primer resultado acerca de la agrupación de datos por variables: CONTEO DE REGISTROS
 #INPUT
 #df - Data Frame de donde analizaremos el nombre de sus columnas
+#show_final_results - Flag que indica si queremos mostrar los enunciados/resultados finales del análisis
 #OUTPUT
 #list_climate - lista que contiene el nombre de las columnas relacionadas a variables climáticas
 #list_soil - lista que contiene el nombre de las columnas relacionadas a variables del suelo
 #list_sat - lista que contiene el nombre de las columnas relacionadas a variables satelitales
 #list_other - lista que contiene el nombre de las columnas relacionadas a otro tipo de variables
-def get_records_groups_count(df):
+def get_records_groups_count(df,show_final_results = True):
 
     #Lista que contiene el nombre de todas las columnas del df 
     df_columns = list(df.columns)
@@ -370,35 +371,93 @@ def get_records_groups_count(df):
         else:
             list_other.append(column)
 
-    #Ya que tenemos las listas, imprimimos los resultados deseados
-    print('En total, se tienen ' + str(len(list_climate)) + ' (' + str(round(len(list_climate)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables CLIMÁTICAS')
-    print('En total, se tienen ' + str(len(list_soil)) + ' (' + str(round(len(list_soil)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables DEL SUELO')
-    print('En total, se tienen ' + str(len(list_sat)) + ' (' + str(round(len(list_sat)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables SATELITALES')
-    print('En total, se tienen ' + str(len(list_other)) + ' (' + str(round(len(list_other)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables OTRAS')
+    #Ya que tenemos las listas, imprimimos los resultados deseados dependiendo si el flag inicial es True o False
+    if show_final_results:
+        print('En total, se tienen ' + str(len(list_climate)) + ' (' + str(round(len(list_climate)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables CLIMÁTICAS')
+        print('En total, se tienen ' + str(len(list_soil)) + ' (' + str(round(len(list_soil)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables DEL SUELO')
+        print('En total, se tienen ' + str(len(list_sat)) + ' (' + str(round(len(list_sat)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables SATELITALES')
+        print('En total, se tienen ' + str(len(list_other)) + ' (' + str(round(len(list_other)/len(df_columns)*100,2)) +'%) columnas relacionadas a variables OTRAS')
     
     return list_climate, list_soil, list_sat, list_other
 
-#Función para graficar los histogramas de cada grupo de columnas
+#Función para graficar las tablas de correlación para las diferentes columnas del df con respecto a un grupo en específico
 #INPUT
-#df - Data Frame del cual haremos las gráficas de histograma por grupo
+#df - Data Frame del cual haremos las gráficas de correlación de cada columna por cada grupo elegido
+#group_name - Nombre del grupo de columnas sobre el cual se desea obtener las correlaciones, valores permitidos: climáticas, suelo, satelitales
 #OUTPUT
-#
+#gráfica de correlación entre las diferentes columnas del grupo elegido
+#df_corr - Gráfica de correlación de las columnas elejidas
 
 #IDEAS DE PLOTS : 
-# GRÁFICAS DE CORRELACIÓN
 # GRAFICAR SUS DESCRIPCIONES (FUNCIÓN DESCRIBE)
 # GRAFICAR LAS VARIABLES VS UNA VARIABLE OBJETIVO (PENSAR BIEN COMO SEPARAR ESTO PORQUE HAY VARIAS VARIABLES OBJETIVO)
-# [https://medium.com/analytics-vidhya/how-to-visualize-pandas-descriptive-statistics-functions-480c3f2ea87c]
-def plot_hist_by_column_group(df):
+def plot_corr_columns(df,group_name,show_summary_results = False):
 
     #Librerias a importar
     import functions.data_exploratory_functions as dtef
     import seaborn as sns
+    import matplotlib.pyplot as plt
 
     #Llamamos a la función para obtener las listas de cada grupo
-    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df,show_summary_results)
 
-    #Del df original, creamos la nueva variable para asignar el grupo correspondiente a cada columna
+    #Creamos una nueva variable con base en el nombre del grupo que se elija para poder hacer su gráfica
+    if group_name == 'climáticas':
+        #Creamos el df de correlación sobre las columnas del grupo elegido
+        df_corr = df[list_climate].corr()
+        #Creamos la gráfica de correlación con sus respectivos parámetros
+        plt.figure(figsize=(13, 6))
+        sns.heatmap(df_corr, vmax=1, annot=True, linewidths=.5)
+        plt.xticks(rotation=30, horizontalalignment='right')
+        plt.title('Tabla de correlación para columnas climáticas',fontsize = 20)
+        plt.show()
+    elif group_name == 'suelo':
+        #Creamos el df de correlación sobre las columnas del grupo elegido
+        df_corr = df[list_soil].corr()
+        #Creamos la gráfica de correlación con sus respectivos parámetros
+        plt.figure(figsize=(40, 30))
+        sns.heatmap(df_corr, vmax=1, annot=True, linewidths=.5)
+        plt.xticks(rotation=30, horizontalalignment='right')
+        plt.title('Tabla de correlación para columnas del suelo',fontsize = 40)
+        plt.show()
+    elif group_name == 'satelitales':
+        #Creamos el df de correlación sobre las columnas del grupo elegido
+        df_corr = df[list_sat].corr()
+        #Creamos la gráfica de correlación con sus respectivos parámetros
+        plt.figure(figsize=(80, 40))
+        sns.heatmap(df_corr, vmax=1, annot=True, linewidths=.5)
+        plt.xticks(rotation=30, horizontalalignment='right')
+        plt.title('Tabla de correlación para columnas satelitales',fontsize = 80)
+        plt.show()
+    else:
+        #Si no proporcionan un nombre de grupo válido entonces se lo informamos
+        print('Grupo no encontrado')
 
-    #Hacemos la gráfica por grupo
-    sns.histplot(x = "x", hue = "group", data = df)
+    #Regresamos el df de correlación final sobre el grupo elegido
+    return df_corr
+
+#Función para obtener aquellas columnas con correlación casi perfecta (cercana 1 en valor absoluto) o casi nula (independientes, cercano a 0)
+#INPUT
+#
+#OUTPUT
+#
+#AQUI LO QUE SE PRETENDE ES BUSCAR AQUELLOS VALORES <0.1 EN VALOR ABSOLUTO Y >0.9 EN VALOR ABS PARA SABER QUE ESTAN CASI PERFECTAMENTE CORRELACIONADOS O SON INDEPENDIENTES
+def get_corr_columns(df_corr):
+
+    #Librerias a importar
+
+    import numpy as np
+
+    lista_values = list()
+    lista_ind = list()
+    lista_ind_col = list()
+    for column in list(df_corr.columns):
+        for x in list(df_corr[column]):
+            lista_values.append(x)
+            if abs(x) < 0.1:
+                lista_ind.append(x)
+                lista_ind_col.append(column)
+
+    df_corr.where(df_corr.eq(-0.06002508098663719)).stack().index.tolist()[0]
+    
+    np.quantile(lista_values,.25)
