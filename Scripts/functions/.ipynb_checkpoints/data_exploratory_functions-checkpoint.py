@@ -442,22 +442,92 @@ def plot_corr_columns(df,group_name,show_summary_results = False):
 #OUTPUT
 #
 #AQUI LO QUE SE PRETENDE ES BUSCAR AQUELLOS VALORES <0.1 EN VALOR ABSOLUTO Y >0.9 EN VALOR ABS PARA SABER QUE ESTAN CASI PERFECTAMENTE CORRELACIONADOS O SON INDEPENDIENTES
-def get_corr_columns(df_corr):
+def get_corr_columns_aux(df_corr,group_name):
 
     #Librerias a importar
+    import pandas as pd
 
-    import numpy as np
+    #Obtenemos las dimensiones del df
+    dim_df = df_corr.shape
 
-    lista_values = list()
-    lista_ind = list()
-    lista_ind_col = list()
+    #El df es simétrica entonces solo nos quedamos con un lado de los datos y la diagonal
+    #Iniciamos el loop para empezar a "borrar" los registros de la diagonal hacia abajo
+    #Las matrices de correlación son cuadradas por lo que basta en fijarse solo en una dimensión
+    for y in range(dim_df[0]-1):
+        #De la columna y, "borramos" desde el registro y+1 al final
+        df_corr.iloc[y+1:,y] = 2
+
+    #LO QUE QUEREMOS HACER ES EXCLUIR TODOS LOS REGISTROS CON CORR = 1 Y QUE SEAN DE LA MISMA COLUMNA SIN DEJAR AFUERA A AQUELLOS POSIBLES REGISTROS CON CORR = 1 Y QUE SEAN DIFERENTES COLUMNAS
+    #INTENTAR METER TODO EN UN SOLO IF PARA EL CRITERIO DE < 0.1 O > 0.9
+        
+    lista_col1_ind = list()
+    lista_col2_ind = list()
+    lista_values_ind = list()
+    lista_col1_strong = list()
+    lista_col2_strong = list()
+    lista_values_strong = list()
+    list_aux_ind = list()
     for column in list(df_corr.columns):
         for x in list(df_corr[column]):
-            lista_values.append(x)
             if abs(x) < 0.1:
-                lista_ind.append(x)
-                lista_ind_col.append(column)
+                lista_columns_ind = df_corr.where(df_corr.eq(x)).stack().index.tolist()[0]
+                lista_col1_ind.append(lista_columns_ind[0])
+                lista_col2_ind.append(lista_columns_ind[1])
+                lista_values_ind.append(round(x,4))
+            elif abs(x) > 0.9 and abs(x) <= 1:
+                lista_columns_strong = df_corr.where(df_corr.eq(x)).stack().index.tolist()
+                for tupla in lista_columns_strong:
+                    #Nos fijamos que no sea la misma columna en la tupla (ya que su corr siempre es 1)
+                    if tupla[0] != tupla[1]:
+                        lista_col1_strong.append(tupla[0])
+                        lista_col2_strong.append(tupla[1])
+                        lista_values_strong.append(round(x,4))
 
-    df_corr.where(df_corr.eq(-0.06002508098663719)).stack().index.tolist()[0]
-    
-    np.quantile(lista_values,.25)
+    dicc_corr = {}
+    dicc_corr['column_group'] = [group_name]*(len(lista_col1_ind) + len(lista_col1_strong))
+    dicc_corr['column_corr1'] = lista_col1_ind + lista_col1_strong
+    dicc_corr['column_corr2'] = lista_col2_ind + lista_col2_strong
+    dicc_corr['corr_value'] = lista_values_ind + lista_values_strong
+    dicc_corr['corr_type'] = ['independientes']*len(lista_col1_ind) + ['fuerte correlación']*len(lista_col1_strong)
+
+    df_corr_col = pd.DataFrame(dicc_corr)
+    #df_corr_col.drop_duplicates(inplace = True,ignore_index = True)
+
+    return lista_col1_ind, lista_col2_ind, lista_col1_strong, lista_col2_strong, df_corr_col
+
+
+def get_corr_columns(df_corr,group_name):
+
+    #Librerias a importar
+    import pandas as pd
+
+    lista_col1_ind = list()
+    lista_col2_ind = list()
+    lista_values_ind = list()
+    lista_col1_strong = list()
+    lista_col2_strong = list()
+    lista_values_strong = list()
+    for column in list(df_corr.columns):
+        for x in list(df_corr[column]):
+            if abs(x) < 0.1:
+                lista_columns_ind = df_corr.where(df_corr.eq(x)).stack().index.tolist()[0]
+                lista_col1_ind.append(lista_columns_ind[0])
+                lista_col2_ind.append(lista_columns_ind[1])
+                lista_values_ind.append(round(x,4))
+            elif abs(x) > 0.9:
+                lista_columns_strong = df_corr.where(df_corr.eq(x)).stack().index.tolist()[0]
+                lista_col1_strong.append(lista_columns_strong[0])
+                lista_col2_strong.append(lista_columns_strong[1])
+                lista_values_strong.append(round(x,4))
+
+    dicc_corr = {}
+    dicc_corr['column_group'] = [group_name]*(len(lista_col1_ind) + len(lista_col1_strong))
+    dicc_corr['column_corr1'] = lista_col1_ind + lista_col1_strong
+    dicc_corr['column_corr2'] = lista_col2_ind + lista_col2_strong
+    dicc_corr['corr_value'] = lista_values_ind + lista_values_strong
+    dicc_corr['corr_type'] = ['independientes']*len(lista_col1_ind) + ['fuerte correlación']*len(lista_col1_strong)
+
+    df_corr_col = pd.DataFrame(dicc_corr)
+    df_corr_col.drop_duplicates(inplace = True,ignore_index = True)
+
+    return lista_col1_ind, lista_col2_ind, lista_col1_strong, lista_col2_strong, df_corr_col
