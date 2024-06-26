@@ -387,10 +387,6 @@ def get_records_groups_count(df,show_final_results = True):
 #OUTPUT
 #gráfica de correlación entre las diferentes columnas del grupo elegido
 #df_corr - Gráfica de correlación de las columnas elejidas
-
-#IDEAS DE PLOTS : 
-# GRAFICAR SUS DESCRIPCIONES (FUNCIÓN DESCRIBE)
-# GRAFICAR LAS VARIABLES VS UNA VARIABLE OBJETIVO (PENSAR BIEN COMO SEPARAR ESTO PORQUE HAY VARIAS VARIABLES OBJETIVO)
 def plot_corr_columns(df,group_name,show_summary_results = False):
 
     #Librerias a importar
@@ -528,4 +524,99 @@ def get_corr_columns(df_corr,group_name):
     print('El grupo de columnas ' + str(group_name) + ' contiene ' + str(num_str_col) + ' (' + str(round(num_str_col/aux*100,2)) + '%) columna(s) con una correlación fuerte, ya sea positiva (cercano a 1) o negativa (cercano a -1)' + '\n')
 
     return df_corr_col
-                
+
+#Función para crear las gráficas de puntos sobre las descripciones estadísticas de cada columna para el grupo indicado
+#INPUT
+#df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
+#group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
+#OUTPUT
+#
+def plot_point_ests(df,group_num):
+
+    #Librerias a importar
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import functions.data_exploratory_functions as dtef
+
+    #Obtenemos las listas de columnas correspondientes a cada grupo
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+
+    #Iniciamos las condicionales para cada grupo
+    #Se trata de grupo climático
+    if group_num == 1:
+        #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_climate].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_climate:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.pointplot(x='index', y=i, data=df_est_col, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo climático')
+    else:
+        print('Introduzca un número válido de grupo')
+
+#Función para crear las gráficas de densidad para las columnas de cada grupo
+#INPUT
+#df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
+#group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
+#OUTPUT
+#
+def plot_kde_ests(df,group_num):
+
+    #Librerias a importar
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import functions.data_exploratory_functions as dtef
+
+    #Obtenemos las listas de columnas correspondientes a cada grupo
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+
+    #Iniciamos las condicionales para cada grupo
+    #Se trata de grupo climático
+    if group_num == 1:
+        #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_climate].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_climate:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.kdeplot(data=df_est_col, x=i, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo climático')
+    else:
+        print('Introduzca un número válido de grupo')
