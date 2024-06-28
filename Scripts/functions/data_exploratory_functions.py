@@ -170,15 +170,20 @@ def show_skew_coeff(df,from_column,to_column):
     #Importamos las librerías a utilizar
     from scipy.stats import skew 
     import matplotlib.pyplot as plt
+    import pandas as pd
 
     #Creamos una lista para ir guardando todos los coeficientes
     lista_skew = []
+    #Creamos la lista para ir guardando el nombre de las columnas
+    lista_cols = []
     #Iniciamos el loop donde vamos a ir guardando todos los coeficientes de sesgo para cada columna
     for column in list(df.columns)[from_column:to_column]:
         #Calculamos el coeficiente de sesgo para la columna
         skew_col = skew(df[column], axis = 0, bias = True)
-        #Agregamos el coeficiente calculado a la lista iniciañ
+        #Agregamos el coeficiente calculado a la lista inicial
         lista_skew.append(skew_col)
+        #Agregamos el nombre de la columna correspondiente
+        lista_cols.append(column)
 
     #Imprimimos algunos resultados importantes
     num_col_sesgo1 = len((list(filter(lambda x: x >= 1, lista_skew))))
@@ -193,6 +198,12 @@ def show_skew_coeff(df,from_column,to_column):
     plt.title("Coeficientes de sesgo para conj. de entrenamiento")
     plt.xlabel('Coeficiente de sesgo')
     plt.ylabel('Frecuencia')
+
+    #Creamos el df con la relación columna-sesgo
+    df_skew = pd.DataFrame({'column_name':lista_cols,'skew_coeff':lista_skew})
+
+    #Regresamos el df del sesgo
+    return df_skew
 
 #Función para mostrar información acerca de los coeficientes de sesgo de las columnas del conj. de entrenamiento
 #INPUT
@@ -530,8 +541,8 @@ def get_corr_columns(df_corr,group_name):
 #df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
 #group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
 #OUTPUT
-#
-def plot_point_ests(df,group_num):
+#Gráfica de línea de las estadísticas más importantes
+def plot_point_ests(df,group_num,show_records_results = False):
 
     #Librerias a importar
     import seaborn as sns
@@ -539,7 +550,7 @@ def plot_point_ests(df,group_num):
     import functions.data_exploratory_functions as dtef
 
     #Obtenemos las listas de columnas correspondientes a cada grupo
-    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df,show_records_results)
 
     #Iniciamos las condicionales para cada grupo
     #Se trata de grupo climático
@@ -570,6 +581,62 @@ def plot_point_ests(df,group_num):
         plt.xlabel('Estadística')
         #Agregamos título a la gráfica 
         plt.title('Estadísticas importantes de grupo climático')
+    #Se trata del grupo del suelo
+    elif group_num == 2:
+    #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_soil].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_soil:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.pointplot(x='index', y=i, data=df_est_col, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo del suelo')
+    #Se trata del grupo satelital
+    elif group_num == 3:
+    #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_sat].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_sat:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.pointplot(x='index', y=i, data=df_est_col, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo satelital')
     else:
         print('Introduzca un número válido de grupo')
 
@@ -578,8 +645,8 @@ def plot_point_ests(df,group_num):
 #df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
 #group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
 #OUTPUT
-#
-def plot_kde_ests(df,group_num):
+#Gráfica de densidad de las estadìsticas más importantes de las columnas de cada grupo
+def plot_kde_ests(df,group_num,show_records_results = False):
 
     #Librerias a importar
     import seaborn as sns
@@ -587,7 +654,7 @@ def plot_kde_ests(df,group_num):
     import functions.data_exploratory_functions as dtef
 
     #Obtenemos las listas de columnas correspondientes a cada grupo
-    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df)
+    list_climate, list_soil, list_sat, list_other = dtef.get_records_groups_count(df,show_records_results)
 
     #Iniciamos las condicionales para cada grupo
     #Se trata de grupo climático
@@ -618,5 +685,89 @@ def plot_kde_ests(df,group_num):
         plt.xlabel('Estadística')
         #Agregamos título a la gráfica 
         plt.title('Estadísticas importantes de grupo climático')
+    #Se trata del grupo del suelo
+    elif group_num == 2:
+        #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_soil].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_soil:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.kdeplot(data=df_est_col, x=i, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo del suelo')
+    #Se trata del grupo satelital
+    elif group_num == 3:
+        #Creamos el df con las descripciones estadísticas
+        df_est_col = df[list_sat].describe(include=['int64','float64'])
+        #Reseteamos el index
+        df_est_col.reset_index(inplace=True)
+        #Removemos la métrica 'count' ya que no aporta nada al resultado final
+        df_est_col = df_est_col[df_est_col['index'] != 'count']
+        #Iniciamos las sublopts
+        fig, ax = plt.subplots()
+        #Iniciamos el loop para generar cada gráfica
+        for i in list_sat:
+            #Revisamos que la columna esté dentro del index
+            if i in ['index']:
+                #Si sí lo está, continuamos
+                continue
+            
+            #Normalizamos los valores de todas las columnas para que queden entre 0 y 1
+            df_est_col[i] = df_est_col[i].apply(lambda x: (x - df_est_col[i].min())/(df_est_col[i].max() - df_est_col[i].min()))
+            #Generamos la gráfica de puntos
+            sns.kdeplot(data=df_est_col, x=i, ax = ax)
+
+        #Agregamos nombre al eje y
+        plt.ylabel('Valor')
+        #Agregamos nombre al eje x
+        plt.xlabel('Estadística')
+        #Agregamos título a la gráfica 
+        plt.title('Estadísticas importantes de grupo satelital')
     else:
         print('Introduzca un número válido de grupo')
+
+#Función para obtener los resultados finales de outliers y sesgo por grupo de columnas
+#INPUT
+#
+#OUTPUT
+#
+def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_sat):
+
+    #Importamos librerias a utilizar 
+    import functions.data_exploratory_functions as dtef
+
+    #Guardamos la lista en una lista para iterar sobre ellas
+    groups_list = [list_climate,list_soil,list_sat]
+
+    #Variable que guardará el nombre del grupo
+    group_name = ''
+
+    #Iniciamos el loop por cada grupo de columnas
+    for lista in groups_list:
+        #Obtenemos el % de columnas con outliers del grupo correspondiente
+        perc_outliers = round(df_outliers_summ[df_outliers_summ['column_name'].isin(lista)].shape[0]/df_outliers_summ.shape[0]*100,2)
+        #Obtenemos el % de columnas con sesgo >= 1
+        perc_skew = round(df_skew[(df_skew['column_name'].isin(lista)) & (df_skew['skew_coeff'] >= 1)].shape[0]/df_skew.shape[0]*100,2)
+        lista = lista
+        #Validamos el nombre del grupo
+        print(f'{lista=}'.split('=')[0])
+        #Imprimimos el resultado final
+        print('El grupo ' + str(-1) + ' tiene un ' + str(perc_outliers) + '% de outliers con respecto al total de outliers en el conjunto de datos. También, tiene un ' + str(perc_skew) + '% de registros con sesgo >=1 con respecto al total de valores con sesgo del conjunto de datos.' + '\n')
