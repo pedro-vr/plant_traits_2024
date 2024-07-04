@@ -395,6 +395,7 @@ def get_records_groups_count(df,show_final_results = True):
 #INPUT
 #df - Data Frame del cual haremos las gráficas de correlación de cada columna por cada grupo elegido
 #group_name - Nombre del grupo de columnas sobre el cual se desea obtener las correlaciones, valores permitidos: climáticas, suelo, satelitales
+#show_summary_results - Flag para controlar si mostramos los enunciados finales del método de conteo de registros para cada grupo (False - NO, True - SI)
 #OUTPUT
 #gráfica de correlación entre las diferentes columnas del grupo elegido
 #df_corr - Gráfica de correlación de las columnas elejidas
@@ -540,6 +541,7 @@ def get_corr_columns(df_corr,group_name):
 #INPUT
 #df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
 #group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
+#show_records_results - Flag para controlar si mostramos los enunciados finales del método de conteo de registros (False - NO, True - SI)
 #OUTPUT
 #Gráfica de línea de las estadísticas más importantes
 def plot_point_ests(df,group_num,show_records_results = False):
@@ -644,6 +646,7 @@ def plot_point_ests(df,group_num,show_records_results = False):
 #INPUT
 #df - Data Frame sobre el cual calcularemos las estadísticas correspondientes
 #group_num - Número de grupo sobre el cual obtendremos la gráfica, valores aceptados: 1 (climáticas), 2 (del suelo), 3 (satelitales)
+#show_records_results - Flag para controlar si mostramos los enunciados finales del método de conteo de registros (False - NO, True - SI)
 #OUTPUT
 #Gráfica de densidad de las estadìsticas más importantes de las columnas de cada grupo
 def plot_kde_ests(df,group_num,show_records_results = False):
@@ -746,9 +749,13 @@ def plot_kde_ests(df,group_num,show_records_results = False):
 
 #Función para obtener los resultados finales de outliers y sesgo por grupo de columnas
 #INPUT
-#
+#df_outliers_summ - Data Frame sobre las columnas con outliers de cada grupo
+#df_skew - Data Frame sobre las columnas con sesgo de cada grupo
+#list_climate - Lista de columnas pertenecientes al grupo climático
+#list_soil - Lista de columnas pertenecientes al grupo del suelo
+#list_sat - Lista de columnas pertenecientes al grupo satelital
 #OUTPUT
-#
+#Enunciados con los resultados más importantes de sesgo y outliers para cada grupo
 def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_sat):
 
     #Importamos librerias a utilizar 
@@ -757,8 +764,8 @@ def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_
     #Guardamos la lista en una lista para iterar sobre ellas
     groups_list = [list_climate,list_soil,list_sat]
 
-    #Variable que guardará el nombre del grupo
-    group_name = ''
+    #Variable que nos ayudará a encontrar el nombre del grupo correspondiente
+    i = 0
 
     #Iniciamos el loop por cada grupo de columnas
     for lista in groups_list:
@@ -766,8 +773,24 @@ def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_
         perc_outliers = round(df_outliers_summ[df_outliers_summ['column_name'].isin(lista)].shape[0]/df_outliers_summ.shape[0]*100,2)
         #Obtenemos el % de columnas con sesgo >= 1
         perc_skew = round(df_skew[(df_skew['column_name'].isin(lista)) & (df_skew['skew_coeff'] >= 1)].shape[0]/df_skew.shape[0]*100,2)
-        lista = lista
-        #Validamos el nombre del grupo
-        print(f'{lista=}'.split('=')[0])
+        #Obtenemos el % de columnas con outliers del grupo correspondiente con respecto a su propio numero de columnas
+        perc_outliers_own = round(df_outliers_summ[df_outliers_summ['column_name'].isin(lista)].shape[0]/len(lista)*100,2)
+        #Obtenemos el % de columnas con sesgo >= 1 con respecto a sus propias columnas
+        perc_skew_own = round(df_skew[(df_skew['column_name'].isin(lista)) & (df_skew['skew_coeff'] >= 1)].shape[0]/len(lista)*100,2)
+
+        #Aumentamos en 1 la variable que controla el nombre del grupo y así sabemos qué grupo es
+        i = i + 1 
+        #Generamos la condición para saber de qué grupo estamos hablando
+        if i ==1:
+            #El primer grupo es el climático
+            group_name = 'climático'
+        elif i == 2:
+            #El segundo grupo es el del suelo
+            group_name = 'del suelo'
+        else:
+            #El grupo que queda es el satelital
+            group_name = 'satelital'
         #Imprimimos el resultado final
-        print('El grupo ' + str(-1) + ' tiene un ' + str(perc_outliers) + '% de outliers con respecto al total de outliers en el conjunto de datos. También, tiene un ' + str(perc_skew) + '% de registros con sesgo >=1 con respecto al total de valores con sesgo del conjunto de datos.' + '\n')
+        print('El grupo ' + group_name + ' tiene un ' + str(perc_outliers) + '% de columnas con al menos un outlier con respecto al total de columnas con outliers en el conjunto de datos. También, tiene un ' + str(perc_skew) + '% de registros con sesgo >=1 con respecto al total de valores con sesgo del conjunto de datos.' + '\n')
+        #Imprimimos el resultado final con respecto a sus propias columnas
+        print('El grupo ' + group_name + ' tiene un ' + str(perc_outliers_own) + '% de columnas con al menos un outlier con respecto al número total de propias columnas. También, tiene un ' + str(perc_skew_own) + '% de registros con sesgo >=1 con respecto al número total de sus propias columnas.' + '\n')
