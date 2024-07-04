@@ -794,3 +794,30 @@ def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_
         print('El grupo ' + group_name + ' tiene un ' + str(perc_outliers) + '% de columnas con al menos un outlier con respecto al total de columnas con outliers en el conjunto de datos. También, tiene un ' + str(perc_skew) + '% de registros con sesgo >=1 con respecto al total de valores con sesgo del conjunto de datos.' + '\n')
         #Imprimimos el resultado final con respecto a sus propias columnas
         print('El grupo ' + group_name + ' tiene un ' + str(perc_outliers_own) + '% de columnas con al menos un outlier con respecto al número total de propias columnas. También, tiene un ' + str(perc_skew_own) + '% de registros con sesgo >=1 con respecto al número total de sus propias columnas.' + '\n')
+
+#Función para sustituir los valores nulos de un df por sus valores promedio de cada columna que se requiera
+#INPUT
+#df_cols - Data Frame donde se tiene el registro de las columnas con valores nulos
+#df - Data Frame que tomaremos de base para aplicar los cambios (se creará uno nuevo al final para no perder el original)
+#OUTPUT
+#df_mean - Data Frame con los valores sustituidos por promedios en las columnas que se necesiten
+def get_new_mean_df(df_cols,df):
+    
+    #Librerias a importar
+    import numpy as np
+    
+    #Obtenemos las columnas sobre los cuales vamos a cambiar sus valores
+    cols_nulls = list(df_cols['columns'].unique())
+    
+    #Copiamos el df original para que no le afecten estos cambios al original
+    df_mean = df.copy()
+    
+    #Empezamos el loop para modificar cada columna
+    for columna in cols_nulls:
+        #Calculamos la media para la columna correspondiente
+        media = df_mean[columna].mean()
+        #Hacemos el cambio de los valores en el df nuevo
+        df_mean[columna] = df_mean[columna].apply(lambda x: media if np.isnan(x) else x)
+
+    #Regresamos el nuevo df con los valores sustituidos
+    return df_mean
