@@ -799,25 +799,73 @@ def get_summ_outliers_skew(df_outliers_summ,df_skew,list_climate,list_soil,list_
 #INPUT
 #df_cols - Data Frame donde se tiene el registro de las columnas con valores nulos
 #df - Data Frame que tomaremos de base para aplicar los cambios (se creará uno nuevo al final para no perder el original)
+#statistic - Nombre de la estadística que utilizaremos para reemplazar los valores nulos (solo acepta "mean", "median", "mode")
+#write_csv - FLag que nos indica si el df nuevo lo escribimos dentro de nuetsra carpeta de datos (local)
 #OUTPUT
 #df_mean - Data Frame con los valores sustituidos por promedios en las columnas que se necesiten
-def get_new_mean_df(df_cols,df):
+def get_new_mean_df(df_cols,df,statistic,write_csv = False):
     
     #Librerias a importar
     import numpy as np
+    import functions.general_functions as gf
     
     #Obtenemos las columnas sobre los cuales vamos a cambiar sus valores
     cols_nulls = list(df_cols['columns'].unique())
     
-    #Copiamos el df original para que no le afecten estos cambios al original
+    #Copiamos el df original para que no le afecten estos cambios al original, este df es para la estadística de la media
     df_mean = df.copy()
+    #Copiamos el df original para que no le afecten estos cambios al original, este df es para la estadística de la mediana
+    df_median = df.copy()
+    #Copiamos el df original para que no le afecten estos cambios al original, este df es para la estadística de la moda
+    df_mode = df.copy()
     
     #Empezamos el loop para modificar cada columna
     for columna in cols_nulls:
-        #Calculamos la media para la columna correspondiente
-        media = df_mean[columna].mean()
-        #Hacemos el cambio de los valores en el df nuevo
-        df_mean[columna] = df_mean[columna].apply(lambda x: media if np.isnan(x) else x)
+        #Verificamos que estadística es la que utilizaremos
+        if statistic == 'mean':
+            #Calculamos la media para la columna correspondiente
+            media = df_mean[columna].mean()
+            #Hacemos el cambio de los valores en el df nuevo
+            df_mean[columna] = df_mean[columna].apply(lambda x: media if np.isnan(x) else x)
+        elif statistic == 'median':
+            #Calculamos la media para la columna correspondiente
+            mediana = df_mean[columna].median()
+            #Hacemos el cambio de los valores en el df nuevo
+            df_median[columna] = df_median[columna].apply(lambda x: mediana if np.isnan(x) else x)
+        elif statistic == 'mode':
+            #Calculamos la media para la columna correspondiente
+            moda = df_mean[columna].mode()
+            #De la serie que obtenemos de arriba nos quedamos con el puro valor de la moda
+            moda_fl = moda.iloc[0]
+            #Hacemos el cambio de los valores en el df nuevo
+            df_mode[columna] = df_mode[columna].apply(lambda x: moda_fl if np.isnan(x) else x)
+        else:
+            print('Estadística no válida')
 
-    #Regresamos el nuevo df con los valores sustituidos
-    return df_mean
+    #Llamamos la función para obtener la ruta a donde escribir el df si se desea
+    ruta_csv = gf.get_data_path('csv')
+
+    #Nos fijamos en el flag si queremos escribir el csv o no
+    if write_csv and statistic == 'mean':
+        #Escribimos el nuevo df en la ruta deseada
+        df_mean.to_csv(ruta_csv + 'df_train_mean',index = False)
+        #Imprimimos la leyenda de que si se escribió el df con éxito
+        print('df creado con éxito')
+    elif write_csv and statistic == 'median':
+        #Escribimos el nuevo df en la ruta deseada
+        df_median.to_csv(ruta_csv + 'df_train_median',index = False)
+        #Imprimimos la leyenda de que si se escribió el df con éxito
+        print('df creado con éxito')
+    elif write_csv and statistic == 'mode':
+        #Escribimos el nuevo df en la ruta deseada
+        df_mode.to_csv(ruta_csv + 'df_train_mode',index = False)
+        #Imprimimos la leyenda de que si se escribió el df con éxito
+        print('df creado con éxito')
+
+    #Regresamos el df correspondiente según la estadística elegida
+    if statistic == 'mean':
+        return df_mean
+    elif statistic == 'median':
+        return df_median
+    elif statistic == 'mode':
+        return df_mode
